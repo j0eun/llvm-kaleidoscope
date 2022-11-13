@@ -1,11 +1,11 @@
 # llvm-kaleidoscope
 ![llvm_logo](https://llvm.org/img/LLVMWyvernSmall.png)
 
-이 저장소는 LLVM 공식 홈페이지의 튜토리얼을 따라 공부하면서 작성한 예제 코드가 있는 곳입니다.
+이 저장소는 LLVM 공식 홈페이지의 Kaleidoscope 튜토리얼을 따라 공부하면서 작성한 예제 코드가 있는 곳입니다.
 
 ## Table of Contents
-1. Kaleidoscope Introduction and the Lexer
-2. Implementing a Parser and AST
+1. ~~Kaleidoscope Introduction and the Lexer~~
+2. ~~Implementing a Parser and AST~~
 3. Code generation to LLVM IR
 4. Adding JIT and Optimizer Support
 5. Extending the Language: Control Flow
