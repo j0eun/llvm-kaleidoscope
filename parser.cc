@@ -1,11 +1,13 @@
 #include "parser.hh"
+#include "json.hh"
+#include "json_fwd.hh"
 
 //===----------------------------------------------------------------------===//
 // Parser
 //===----------------------------------------------------------------------===//
 
-int CurTok = 0;
 std::map<char, int> BinopPrecedence;
+int CurTok = 0;
 
 /// CurTok/getNextToken - Provide a simple token buffer.  CurTok is the current
 /// token the parser is looking at.  getNextToken reads another token from the
@@ -217,8 +219,53 @@ std::unique_ptr<PrototypeAST> ParseExtern() {
 //===----------------------------------------------------------------------===//
 
 void HandleDefinition() {
-  if (ParseDefinition()) {
-    fprintf(stderr, "Parsed a function definition.\n");
+  auto def = ParseDefinition();
+  if (def) {
+    nlohmann::json ast;
+    // Prototype parsing
+    std::string func_name = def->Proto->getName();
+    std::vector<std::string> args = def->Proto->getArgs();
+    ast["type"] = "tok_def";
+    ast["prototype"]["name"]["type"] = tok2str(chktok(func_name)).c_str();
+    ast["prototype"]["name"]["value"] = func_name.c_str();
+    ast["prototype"]["args"] = nlohmann::json::array();
+    for (int i = 0; i < args.size(); i++) {
+      nlohmann::json arg;
+      arg["type"] = tok2str(chktok(args[i])).c_str();
+      arg["value"] = args[i].c_str();
+      ast["prototype"]["args"].push_back(arg);
+    }
+    // Expression parsing
+    if (!strcmp(typeid(NumberExprAST).name(), typeid(*def->Body).name())) {
+        // std::unique_ptr<ExprAST> clone = std::make_unique<ExprAST>(*def->Body);
+        // NumberExprAST* num_expr = dynamic_cast<NumberExprAST*>(clone.get());
+        // if (!num_expr) {
+        //   fprintf(stderr, "failed under casting to NumberExprAST from ExprAST\n");
+        //   return;
+        // }
+        // ast["expression"]["type"] = tok2str(chktok(std::to_string(num_expr->getNumber()))).c_str();
+        // ast["expression"]["value"] = num_expr->getNumber();
+    }
+    else if (!strcmp(typeid(VariableExprAST).name(), typeid(*def->Body).name())) {
+        // VariableExprAST* temp = &(VariableExprAST*)def->Body;
+        // ast["expression"]["type"] = tok2str(chktok(temp->getName())).c_str();
+        // ast["expression"]["value"] = temp->getName();
+    }
+    else if (!strcmp(typeid(BinaryExprAST).name(), typeid(*def->Body).name())) {
+      // std::unique_ptr<ExprAST> clone = std::make_unique<ExprAST>(*def->Body);
+      // BinaryExprAST* bin_expr = dynamic_cast<BinaryExprAST*>(clone.get());
+      // if (!bin_expr) {
+      //   fprintf(stderr, "failed under casting to BinaryExprAST from ExprAST\n");
+      //   return;
+      // }
+      // ast["expression"]["type"] = tok2str(chktok(std::to_string(bin_expr->getOp()))).c_str();
+      // ast["expression"]["value"] = bin_expr->getOp();
+    }
+    else if (!strcmp(typeid(CallExprAST).name(), typeid(*def->Body).name())) {
+    }
+    else {
+    }
+    fprintf(stderr, "%s\n", ast.dump(4).c_str());
   } else {
     // Skip token for error recovery.
     getNextToken();
@@ -226,8 +273,22 @@ void HandleDefinition() {
 }
 
 void HandleExtern() {
-  if (ParseExtern()) {
-    fprintf(stderr, "Parsed an extern\n");
+  auto ext = ParseExtern();
+  if (ext) {
+    nlohmann::json ast;
+    std::string func_name = ext->getName();
+    std::vector<std::string> args = ext->getArgs();
+    ast["type"] = "tok_extern";
+    ast["prototype"]["name"]["type"] = tok2str(chktok(func_name)).c_str();
+    ast["prototype"]["name"]["value"] = func_name.c_str();
+    ast["prototype"]["args"] = nlohmann::json::array();
+    for (int i = 0; i < args.size(); i++) {
+      nlohmann::json arg;
+      arg["type"] = tok2str(chktok(args[i])).c_str();
+      arg["value"] = args[i].c_str();
+      ast["prototype"]["args"].push_back(arg);
+    }
+    fprintf(stderr, "%s\n", ast.dump(4).c_str());
   } else {
     // Skip token for error recovery.
     getNextToken();
@@ -235,9 +296,10 @@ void HandleExtern() {
 }
 
 void HandleTopLevelExpression() {
+  auto expr = ParseTopLevelExpr();
   // Evaluate a top-level expression into an anonymous function.
-  if (ParseTopLevelExpr()) {
-    fprintf(stderr, "Parsed a top-level expr\n");
+  if (expr) {
+    // fprintf(stderr, "%llx\n", *expr);
   } else {
     // Skip token for error recovery.
     getNextToken();
@@ -246,6 +308,22 @@ void HandleTopLevelExpression() {
 
 /// top ::= definition | external | expression | ';'
 void MainLoop() {
+  switch (CurTok) {
+  case tok_eof:
+    return;
+  case ';': // ignore top-level semicolons.
+    getNextToken();
+    break;
+  case tok_def:
+    HandleDefinition();
+    break;
+  case tok_extern:
+    HandleExtern();
+    break;
+  default:
+    HandleTopLevelExpression();
+    break;
+  }
   while (true) {
     fprintf(stderr, "ready> ");
     switch (CurTok) {

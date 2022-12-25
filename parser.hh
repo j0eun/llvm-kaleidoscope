@@ -3,6 +3,7 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <stdlib.h>
 
 #include "lexer.hh"
 
@@ -22,6 +23,7 @@ namespace {
 
     public:
         NumberExprAST(double Val) : Val(Val) {};
+        const double &getNumber() const { return Val; }
     };
 
     class VariableExprAST : public ExprAST {
@@ -29,6 +31,7 @@ namespace {
 
     public:
         VariableExprAST(const std::string &Name) : Name(Name) {}
+        const std::string &getName() const { return Name; }
     };
 
     class BinaryExprAST : public ExprAST {
@@ -39,6 +42,7 @@ namespace {
         BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS,
                         std::unique_ptr<ExprAST> RHS)
             : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
+        const char &getOp() const { return Op; }
     };
 
     class CallExprAST : public ExprAST {
@@ -49,6 +53,7 @@ namespace {
         CallExprAST(const std::string &Callee,
                     std::vector<std::unique_ptr<ExprAST>> Args)
             : Callee(Callee), Args(std::move(Args)) {}
+        const std::string &getName() const { return Callee; }
     };
 
     class PrototypeAST {
@@ -59,10 +64,12 @@ namespace {
         PrototypeAST(const std::string &Name, std::vector<std::string> Args)
             : Name(Name), Args(std::move(Args)) {}
 
-        const std::string &getName() const;
+        const std::string &getName() const { return Name; }
+        const std::vector<std::string> &getArgs() const { return Args; }
     };
 
     class FunctionAST {
+    public:
         std::unique_ptr<PrototypeAST> Proto;
         std::unique_ptr<ExprAST> Body;
 

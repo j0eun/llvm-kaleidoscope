@@ -15,6 +15,8 @@ enum Token {
 };
 
 int gettok();
+int chktok(std::string s);
+std::string tok2str(int tok);
 
 extern double NumVal;
 extern std::string IdentifierStr;
